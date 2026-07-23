@@ -3,8 +3,18 @@ import 'package:flutter/material.dart';
 import '../services/booking_service.dart';
 import 'booking_details_screen.dart';
 
-class FutureBookingsScreen extends StatelessWidget {
+class FutureBookingsScreen extends StatefulWidget {
   const FutureBookingsScreen({super.key});
+
+  @override
+  State<FutureBookingsScreen> createState() =>
+      _FutureBookingsScreenState();
+}
+
+class _FutureBookingsScreenState
+    extends State<FutureBookingsScreen> {
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -54,16 +64,22 @@ class FutureBookingsScreen extends StatelessWidget {
                       "Check-in: ${booking.checkIn.toLocal().toString().split(' ')[0]}",
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => BookingDetailsScreen(
-                            booking: booking,
-                          ),
-                        ),
-                      );
-                    },
+                    onTap: () async {
+
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => BookingDetailsScreen(
+        booking: booking,
+      ),
+    ),
+  );
+
+  if (result == true) {
+    setState(() {});
+  }
+
+},
                   ),
                 );
               },

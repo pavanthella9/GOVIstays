@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/booking.dart';
+import '../services/booking_service.dart';
+import 'edit_booking_screen.dart';
 
 class BookingDetailsScreen extends StatelessWidget {
   final Booking booking;
@@ -55,6 +57,91 @@ class BookingDetailsScreen extends StatelessWidget {
             Text("Notes"),
 
             Text(booking.notes),
+            const SizedBox(height: 30),
+
+SizedBox(
+  width: double.infinity,
+  child: ElevatedButton.icon(
+    icon: const Icon(Icons.edit),
+    label: const Text("Edit Booking"),
+    onPressed: () async {
+
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => EditBookingScreen(
+        booking: booking,
+      ),
+    ),
+  );
+
+  if (result == true) {
+    Navigator.pop(context, true);
+  }
+
+
+    },
+  ),
+),
+
+const SizedBox(height: 15),
+
+SizedBox(
+  width: double.infinity,
+  child: ElevatedButton.icon(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.red,
+      foregroundColor: Colors.white,
+    ),
+    icon: const Icon(Icons.delete),
+    label: const Text("Delete Booking"),
+    onPressed: () async {
+
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text("Delete Booking"),
+            content: const Text(
+              "Are you sure you want to delete this booking?",
+            ),
+            actions: [
+
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context, false);
+                },
+                child: const Text("Cancel"),
+              ),
+
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                child: const Text("Delete"),
+              ),
+
+            ],
+          );
+        },
+      );
+
+      if (confirm == true) {
+
+        BookingService.deleteBooking(booking);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.red,
+            content: Text("Booking Deleted"),
+          ),
+        );
+
+        Navigator.pop(context, true);
+      }
+    },
+  ),
+),
 
           ],
         ),

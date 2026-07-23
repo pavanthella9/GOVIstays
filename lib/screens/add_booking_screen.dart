@@ -11,13 +11,17 @@ class AddBookingScreen extends StatefulWidget {
 }
 
 class _AddBookingScreenState extends State<AddBookingScreen> {
-  final _formkey = GlobalKey<FormState>();
+
+  final _formKey = GlobalKey<FormState>();
+
   final customerNameController = TextEditingController();
   final phoneController = TextEditingController();
   final addressController = TextEditingController();
   final guestsController = TextEditingController();
+
   final totalController = TextEditingController();
   final advanceController = TextEditingController();
+
   final notesController = TextEditingController();
 
   bool masterRoom1 = false;
@@ -30,39 +34,72 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
   DateTime? checkOutDate;
 
   Future<void> pickCheckInDate() async {
+
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2035),
     );
+
     if (picked != null) {
-      setState(() => checkInDate = picked);
+
+      setState(() {
+        checkInDate = picked;
+
+        if (checkOutDate != null &&
+            !checkOutDate!.isAfter(checkInDate!)) {
+          checkOutDate = null;
+        }
+      });
     }
   }
 
   Future<void> pickCheckOutDate() async {
+
+    if (checkInDate == null) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Please select Check-in Date first.",
+          ),
+        ),
+      );
+
+      return;
+    }
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
+      initialDate: checkInDate!.add(const Duration(days: 1)),
+      firstDate: checkInDate!.add(const Duration(days: 1)),
       lastDate: DateTime(2035),
     );
+
     if (picked != null) {
-      setState(() => checkOutDate = picked);
+
+      setState(() {
+        checkOutDate = picked;
+      });
     }
   }
 
   @override
   void dispose() {
+
     customerNameController.dispose();
     phoneController.dispose();
     addressController.dispose();
     guestsController.dispose();
+
     totalController.dispose();
     advanceController.dispose();
+
     notesController.dispose();
+
     super.dispose();
+
   }
 
   @override
@@ -84,7 +121,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
           TextField(
             controller: customerNameController,
             decoration: const InputDecoration(
-              labelText: "Customer Name",
+              labelText: "Customer Name *",
               border: OutlineInputBorder(),
             ),
           ),
@@ -94,7 +131,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
             controller: phoneController,
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(
-              labelText: "Phone Number",
+              labelText: "Phone Number *",
               border: OutlineInputBorder(),
             ),
           ),
@@ -103,7 +140,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
           TextField(
             controller: addressController,
             decoration: const InputDecoration(
-              labelText: "Address",
+              labelText: "Address *",
               border: OutlineInputBorder(),
             ),
           ),
@@ -113,7 +150,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
             controller: guestsController,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: "Number of Guests",
+              labelText: "Number of Guests *",
               border: OutlineInputBorder(),
             ),
           ),
@@ -177,7 +214,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
             controller: totalController,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: "Total Amount",
+              labelText: "Total Amount *",
               border: OutlineInputBorder(),
             ),
             onChanged: (_) => setState(() {}),
@@ -188,7 +225,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
             controller: advanceController,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: "Advance Amount",
+              labelText: "Advance Amount *",
               border: OutlineInputBorder(),
             ),
             onChanged: (_) => setState(() {}),
@@ -198,28 +235,41 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
 
           Builder(
             builder: (context) {
-              final total = int.tryParse(totalController.text.trim()) ?? 0;
-              final advance = int.tryParse(advanceController.text.trim()) ?? 0;
+              final total = double.tryParse(totalController.text) ?? 0;
+              final advance = double.tryParse(advanceController.text) ?? 0;
               final balance = total - advance;
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Total Amount : ₹$total",
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+              return Card(
+                color: Colors.green.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(15),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Total : ₹${total.toStringAsFixed(0)}",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Advance : ₹${advance.toStringAsFixed(0)}",
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                      const Divider(),
+                      Text(
+                        "Balance : ₹${balance.toStringAsFixed(0)}",
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Balance Amount : ₹$balance",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
+                ),
               );
             },
           ),
@@ -230,7 +280,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
             controller: notesController,
             maxLines: 3,
             decoration: const InputDecoration(
-              labelText: "Notes",
+              labelText: "Notes (Optional)",
               border: OutlineInputBorder(),
             ),
           ),
@@ -242,68 +292,140 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
             height: 50,
             child: ElevatedButton(
               onPressed: () {
+                // Mandatory fields
+                if (customerNameController.text.trim().isEmpty ||
+                    phoneController.text.trim().isEmpty ||
+                    addressController.text.trim().isEmpty ||
+                    guestsController.text.trim().isEmpty ||
+                    totalController.text.trim().isEmpty ||
+                    advanceController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please fill all mandatory fields."),
+                    ),
+                  );
+                  return;
+                }
 
-// Validation
-if (customerNameController.text.trim().isEmpty || phoneController.text.trim().isEmpty || addressController.text.trim().isEmpty || guestsController.text.trim().isEmpty || totalController.text.trim().isEmpty || advanceController.text.trim().isEmpty || notesController.text.trim().isEmpty){
-ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all mandatory fields.")));
-return;
-}
-if (!(masterRoom1||masterRoom2||queenRoom1||queenRoom2||pentHouse)){
-ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select at least one room.")));
-return;
-}
-if (checkInDate==null||checkOutDate==null){
-ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select Check-in & Check-out dates.")));
-return;
-}
-if (!checkOutDate!.isAfter(checkInDate!)){
-ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Check-out must be after Check-in.")));
-return;
-}
+                // Room validation
+                if (!(masterRoom1 ||
+                    masterRoom2 ||
+                    queenRoom1 ||
+                    queenRoom2 ||
+                    pentHouse)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please select at least one room."),
+                    ),
+                  );
+                  return;
+                }
 
+                // Date validation
+                if (checkInDate == null || checkOutDate == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please select Check-in & Check-out dates."),
+                    ),
+                  );
+                  return;
+                }
+
+                if (!checkOutDate!.isAfter(checkInDate!)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Check-out date must be after Check-in date."),
+                    ),
+                  );
+                  return;
+                }
+
+                final total = double.tryParse(totalController.text.trim()) ?? 0;
+                final advance = double.tryParse(advanceController.text.trim()) ?? 0;
+
+                if (advance > total) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Advance Amount cannot be greater than Total Amount.",
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                final selectedRooms = <String>[
+                  if (masterRoom1) "MR1",
+                  if (masterRoom2) "MR2",
+                  if (queenRoom1) "QR1",
+                  if (queenRoom2) "QR2",
+                  if (pentHouse) "PH",
+                ];
+
+                // Double booking validation
+                for (final room in selectedRooms) {
+                  if (!BookingService.isRoomAvailable(
+                    room,
+                    checkInDate!,
+                    checkOutDate!,
+                  )) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "$room is already booked for selected dates.",
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                }
 
                 final booking = Booking(
                   bookingId: "GST${DateTime.now().millisecondsSinceEpoch}",
-                  customerName: customerNameController.text,
-                  phoneNumber: phoneController.text,
-                  address: addressController.text,
-                  guests: int.tryParse(guestsController.text) ?? 0,
-                  rooms: [
-                    if (masterRoom1) "MR1",
-                    if (masterRoom2) "MR2",
-                    if (queenRoom1) "QR1",
-                    if (queenRoom2) "QR2",
-                    if (pentHouse) "PH",
-                  ],
-                  checkIn: checkInDate ?? DateTime.now(),
-                  checkOut: checkOutDate ?? DateTime.now(),
-                  totalAmount: double.tryParse(totalController.text) ?? 0,
-                  advanceAmount: double.tryParse(advanceController.text) ?? 0,
-                  balanceAmount:
-                      (double.tryParse(totalController.text) ?? 0) -
-                      (double.tryParse(advanceController.text) ?? 0),
-                  notes: notesController.text,
+                  customerName: customerNameController.text.trim(),
+                  phoneNumber: phoneController.text.trim(),
+                  address: addressController.text.trim(),
+                  guests: int.parse(guestsController.text.trim()),
+                  rooms: selectedRooms,
+                  checkIn: checkInDate!,
+                  checkOut: checkOutDate!,
+                  totalAmount: total,
+                  advanceAmount: advance,
+                  balanceAmount: total - advance,
+                  notes: notesController.text.trim(),
                 );
 
-                BookingService.bookings.add(booking);
+                final success = BookingService.addBooking(booking);
 
+                if (!success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Booking failed. Room already booked.",
+                      ),
+                    ),
+                  );
+                  return;
+                }
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
+                    backgroundColor: Colors.green,
                     content: Text("Booking Saved Successfully"),
                   ),
                 );
 
                 Navigator.pop(context);
               },
-child: const Text(
-                "SAVE BOOKING",
-                style: TextStyle(fontSize: 18),
+              child: const Text(
+                "Save Booking",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
-
-          const SizedBox(height: 30),
         ],
       ),
     );
