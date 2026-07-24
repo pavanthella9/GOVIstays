@@ -1,6 +1,7 @@
 import '../models/booking.dart';
 import '../services/booking_service.dart';
 import '../services/customer_service.dart';
+import '../services/whatsapp_service.dart';
 
 import 'package:flutter/material.dart';
 
@@ -101,6 +102,61 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
 
     super.dispose();
 
+  }
+
+  Future<void> _showBookingConfirmation(Booking booking) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 10),
+              Expanded(child: Text('Booking Saved')),
+            ],
+          ),
+          content: const Text(
+            'The booking was saved successfully. You can now send the confirmation to the customer.',
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () async {
+                await WhatsAppService.copyBookingDetails(booking);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Booking details copied.')),
+                );
+              },
+              icon: const Icon(Icons.copy),
+              label: const Text('Copy Details'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                try {
+                  await WhatsAppService.openWhatsApp(booking);
+                } on WhatsAppException catch (error) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(error.message),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.chat),
+              label: const Text('WhatsApp'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Done'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -416,14 +472,9 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
                 }
 
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: Colors.green,
-                    content: Text("Booking Saved Successfully"),
-                  ),
-                );
-
-                Navigator.pop(context);
+                await _showBookingConfirmation(booking);
+                if (!context.mounted) return;
+                Navigator.pop(context, true);
               },
               child: const Text(
                 "Save Booking",

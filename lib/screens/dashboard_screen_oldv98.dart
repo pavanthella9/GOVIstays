@@ -13,7 +13,6 @@ import 'today_checkouts_screen.dart';
 import 'staff_management_screen.dart';
 import 'customer_list_screen.dart';
 import 'reports_screen.dart';
-import 'finance_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -168,37 +167,6 @@ class DashboardScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => const ReportsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Card(
-                  elevation: 5,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 10,
-                    ),
-                    leading: const CircleAvatar(
-                      radius: 24,
-                      child: Icon(Icons.account_balance_wallet),
-                    ),
-                    title: const Text(
-                      'Finance',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    subtitle: const Text('Collections, payment status and pending balances'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FinanceScreen(),
                         ),
                       );
                     },

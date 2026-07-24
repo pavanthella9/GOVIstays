@@ -3,6 +3,7 @@ import '../models/booking.dart';
 import '../services/booking_service.dart';
 import '../services/user_service.dart';
 import '../services/customer_service.dart';
+import '../services/whatsapp_service.dart';
 import 'customer_details_screen.dart';
 import 'edit_booking_screen.dart';
 
@@ -86,6 +87,42 @@ class BookingDetailsScreen extends StatelessWidget {
                       SnackBar(content: Text('Unable to open customer: $error')),
                     );
                   }
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: const Icon(Icons.chat),
+                label: const Text('Send WhatsApp Confirmation'),
+                onPressed: () async {
+                  try {
+                    await WhatsAppService.openWhatsApp(booking);
+                  } on WhatsAppException catch (error) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(error.message),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.copy),
+                label: const Text('Copy Booking Details'),
+                onPressed: () async {
+                  await WhatsAppService.copyBookingDetails(booking);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Booking details copied.')),
+                  );
                 },
               ),
             ),
