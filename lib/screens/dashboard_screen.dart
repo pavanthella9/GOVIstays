@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import '../services/booking_service.dart';
 import 'add_booking_screen.dart';
 import 'booking_history_screen.dart';
@@ -18,6 +19,13 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('GOVIstays Dashboard'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: () => _confirmLogout(context),
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: ValueListenableBuilder<int>(
         valueListenable: BookingService.changeNotifier,
@@ -276,4 +284,30 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
+  Future<void> _confirmLogout(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Logout?'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout == true) {
+      await AuthService.signOut();
+    }
+  }
+
 }
