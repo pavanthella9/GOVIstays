@@ -128,16 +128,24 @@ SizedBox(
 
       if (confirm == true) {
 
-        BookingService.deleteBooking(booking);
+        final deleted = await BookingService.deleteBooking(booking);
+
+        if (!context.mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.red,
-            content: Text("Booking Deleted"),
+          SnackBar(
+            backgroundColor: deleted ? Colors.red : Colors.orange,
+            content: Text(
+              deleted
+                  ? "Booking Deleted"
+                  : "Delete failed. Please check the internet and try again.",
+            ),
           ),
         );
 
-        Navigator.pop(context, true);
+        if (deleted) {
+          Navigator.pop(context, true);
+        }
       }
     },
   ),

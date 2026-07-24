@@ -3,16 +3,15 @@ import 'package:flutter/material.dart';
 import '../services/booking_service.dart';
 import 'booking_details_screen.dart';
 
-class FutureBookingsScreen extends StatefulWidget {
-  const FutureBookingsScreen({super.key});
+class BookingHistoryScreen extends StatefulWidget {
+  const BookingHistoryScreen({super.key});
 
   @override
-  State<FutureBookingsScreen> createState() =>
-      _FutureBookingsScreenState();
+  State<BookingHistoryScreen> createState() =>
+      _BookingHistoryScreenState();
 }
 
-class _FutureBookingsScreenState
-    extends State<FutureBookingsScreen> {
+class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   final TextEditingController _searchController =
       TextEditingController();
 
@@ -35,16 +34,15 @@ class _FutureBookingsScreenState
     return ValueListenableBuilder<int>(
       valueListenable: BookingService.changeNotifier,
       builder: (context, _, __) {
-        final futureBookings =
-            BookingService.getFutureBookings();
+        final history = BookingService.getBookingHistory();
         final bookings = BookingService.searchBookings(
-          futureBookings,
+          history,
           _searchQuery,
         );
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Future Bookings'),
+            title: const Text('Booking History'),
           ),
           body: Column(
             children: [
@@ -84,7 +82,7 @@ class _FutureBookingsScreenState
                     ? Center(
                         child: Text(
                           _searchQuery.isEmpty
-                              ? 'No Future Bookings'
+                              ? 'No Completed Bookings'
                               : 'No matching bookings found',
                           style: const TextStyle(fontSize: 18),
                         ),
@@ -103,23 +101,25 @@ class _FutureBookingsScreenState
                             ),
                             child: ListTile(
                               leading: const CircleAvatar(
-                                child:
-                                    Icon(Icons.calendar_month),
+                                child: Icon(Icons.history),
                               ),
                               title: Text(booking.customerName),
                               subtitle: Text(
                                 'Phone: ${booking.phoneNumber}\n'
                                 'Room: ${booking.rooms.join(', ')}\n'
-                                'Check-in: ${_formatDate(booking.checkIn)}',
+                                '${_formatDate(booking.checkIn)} to '
+                                '${_formatDate(booking.checkOut)}\n'
+                                'Booking ID: ${booking.bookingId}',
                               ),
-                              trailing: const Icon(
-                                Icons.arrow_forward_ios,
-                                size: 18,
+                              trailing: Text(
+                                '₹${booking.balanceAmount}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              isThreeLine: true,
+                              isThreeLine: false,
                               onTap: () async {
-                                final result =
-                                    await Navigator.push(
+                                await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) =>
@@ -129,7 +129,7 @@ class _FutureBookingsScreenState
                                   ),
                                 );
 
-                                if (result == true && mounted) {
+                                if (mounted) {
                                   setState(() {});
                                 }
                               },

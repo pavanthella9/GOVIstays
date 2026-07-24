@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../services/booking_service.dart';
 import 'add_booking_screen.dart';
-import 'today_checkins_screen.dart';
-import 'today_checkouts_screen.dart';
+import 'booking_history_screen.dart';
 import 'current_guests_screen.dart';
 import 'future_bookings_screen.dart';
+import 'room_status_screen.dart';
+import 'today_checkins_screen.dart';
+import 'today_checkouts_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -16,97 +19,221 @@ class DashboardScreen extends StatelessWidget {
         title: const Text('GOVIstays Dashboard'),
         centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          dashboardCard(
-            Icons.calendar_today,
-            "Today's Check-ins",
-            Colors.green,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TodayCheckinsScreen(),
+      body: ValueListenableBuilder<int>(
+        valueListenable: BookingService.changeNotifier,
+        builder: (context, _, __) {
+          return ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              _roomSummaryCard(context),
+              const SizedBox(height: 16),
+              _dashboardCard(
+                icon: Icons.login,
+                title: "Today's Check-ins",
+                count: BookingService.todayCheckInsCount,
+                color: Colors.green,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const TodayCheckinsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _dashboardCard(
+                icon: Icons.logout,
+                title: "Today's Check-outs",
+                count: BookingService.todayCheckOutsCount,
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const TodayCheckoutsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _dashboardCard(
+                icon: Icons.people,
+                title: 'Current Guests',
+                count: BookingService.currentGuestsCount,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CurrentGuestsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _dashboardCard(
+                icon: Icons.book_online,
+                title: 'Future Bookings',
+                count: BookingService.futureBookingsCount,
+                color: Colors.purple,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FutureBookingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _dashboardCard(
+                icon: Icons.history,
+                title: 'Booking History',
+                count: BookingService.bookingHistoryCount,
+                color: Colors.brown,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BookingHistoryScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              Card(
+                elevation: 5,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  leading: const CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.red,
+                    child: Icon(Icons.add, color: Colors.white),
+                  ),
+                  title: const Text(
+                    'Add Booking',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  subtitle: const Text('Create a new guest reservation'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AddBookingScreen(),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-
-          dashboardCard(
-            Icons.logout,
-            "Today's Check-outs",
-            Colors.orange,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TodayCheckoutsScreen(),
-                ),
-              );
-            },
-          ),
-
-          dashboardCard(
-            Icons.people,
-            "Current Guests",
-            Colors.blue,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CurrentGuestsScreen(),
-                ),
-              );
-            },
-          ),
-
-          dashboardCard(
-            Icons.book_online,
-            "Future Bookings",
-            Colors.purple,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const FutureBookingsScreen(),
-                ),
-              );
-            },
-          ),
-
-          dashboardCard(
-            Icons.add_box,
-            "Add Booking",
-            Colors.red,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AddBookingScreen(),
-                ),
-              );
-            },
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget dashboardCard(
-    IconData icon,
-    String title,
-    Color color,
-    VoidCallback onTap,
-  ) {
+  Widget _roomSummaryCard(BuildContext context) {
+    return Card(
+      elevation: 5,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const RoomStatusScreen(),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.hotel, size: 28),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Room Availability',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios, size: 18),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _roomMetric('Total', BookingService.totalRoomsCount),
+                  _roomMetric('Occupied', BookingService.occupiedRoomsCount),
+                  _roomMetric('Available', BookingService.availableRoomsCount),
+                ],
+              ),
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: BookingService.occupancyPercentage / 100,
+                  minHeight: 9,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Occupancy: ${BookingService.occupancyPercentage.toStringAsFixed(0)}%',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _roomMetric(String label, int value) {
+    return Column(
+      children: [
+        Text(
+          '$value',
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label),
+      ],
+    );
+  }
+
+  Widget _dashboardCard({
+    required IconData icon,
+    required String title,
+    required int count,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 15),
       elevation: 5,
       child: ListTile(
-        leading: Icon(
-          icon,
-          color: color,
-          size: 35,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 8,
+        ),
+        leading: CircleAvatar(
+          radius: 24,
+          backgroundColor: color.withValues(alpha: 0.14),
+          child: Icon(icon, color: color, size: 28),
         ),
         title: Text(
           title,
@@ -115,7 +242,36 @@ class DashboardScreen extends StatelessWidget {
             fontSize: 18,
           ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios),
+        subtitle: Text(
+          count == 1 ? '1 booking' : '$count bookings',
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              constraints: const BoxConstraints(minWidth: 40),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '$count',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_ios, size: 18),
+          ],
+        ),
         onTap: onTap,
       ),
     );

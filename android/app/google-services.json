@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "273715211110",
+    "project_id": "govistays-hillsidehs-1418",
+    "storage_bucket": "govistays-hillsidehs-1418.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:273715211110:android:d5043dcef7459d8d72f6a7",
+        "android_client_info": {
+          "package_name": "com.example.govistays"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAi1J8jRN5dRNXo2yiuGOOFc9aqMpUAF3U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

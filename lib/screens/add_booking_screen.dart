@@ -291,7 +291,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 // Mandatory fields
                 if (customerNameController.text.trim().isEmpty ||
                     phoneController.text.trim().isEmpty ||
@@ -395,7 +395,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
                   notes: notesController.text.trim(),
                 );
 
-                final success = BookingService.addBooking(booking);
+                final success = await BookingService.addBooking(booking);
 
                 if (!success) {
                   ScaffoldMessenger.of(context).showSnackBar(

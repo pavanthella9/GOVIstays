@@ -397,7 +397,7 @@ SizedBox(
       backgroundColor: Colors.orange,
       foregroundColor: Colors.white,
     ),
-    onPressed: () {
+    onPressed: () async {
 
       if (customerNameController.text.trim().isEmpty ||
           phoneController.text.trim().isEmpty ||
@@ -481,10 +481,21 @@ SizedBox(
         notes: notesController.text.trim(),
       );
 
-      BookingService.updateBooking(
+      final success = await BookingService.updateBooking(
         widget.booking,
         updatedBooking,
       );
+
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Update failed. One or more rooms are already booked for the selected dates.",
+            ),
+          ),
+        );
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
