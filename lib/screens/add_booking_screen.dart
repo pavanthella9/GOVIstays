@@ -1,5 +1,6 @@
 import '../models/booking.dart';
 import '../services/booking_service.dart';
+import '../services/customer_service.dart';
 
 import 'package:flutter/material.dart';
 
@@ -408,6 +409,13 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
                   return;
                 }
 
+                try {
+                  await CustomerService.upsertFromBooking(booking);
+                } catch (error) {
+                  debugPrint('Customer profile sync failed: $error');
+                }
+
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     backgroundColor: Colors.green,

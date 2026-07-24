@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/booking_service.dart';
+import '../services/user_service.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
 
@@ -23,15 +24,15 @@ class SplashScreen extends StatelessWidget {
         if (user == null) return const LoginScreen();
 
         return FutureBuilder<void>(
-          future: BookingService.initialize(),
-          builder: (context, bookingSnapshot) {
-            if (bookingSnapshot.connectionState != ConnectionState.done) {
+          future: _initializeSignedInUser(),
+          builder: (context, startupSnapshot) {
+            if (startupSnapshot.connectionState != ConnectionState.done) {
               return const _SplashView();
             }
 
-            if (bookingSnapshot.hasError) {
+            if (startupSnapshot.hasError) {
               return _StartupError(
-                message: bookingSnapshot.error.toString(),
+                message: startupSnapshot.error.toString(),
               );
             }
 
@@ -40,6 +41,17 @@ class SplashScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _initializeSignedInUser() async {
+    final profile = await UserService.loadCurrentUser();
+    if (!profile.active) {
+      await AuthService.signOut();
+      throw const UserServiceException(
+        'This account has been disabled by the administrator.',
+      );
+    }
+    await BookingService.initialize();
   }
 }
 

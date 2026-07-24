@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/booking.dart';
 import '../services/booking_service.dart';
+import '../services/user_service.dart';
+import '../services/customer_service.dart';
+import 'customer_details_screen.dart';
 import 'edit_booking_screen.dart';
 
 class BookingDetailsScreen extends StatelessWidget {
@@ -57,99 +60,130 @@ class BookingDetailsScreen extends StatelessWidget {
             Text("Notes"),
 
             Text(booking.notes),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
 
-SizedBox(
-  width: double.infinity,
-  child: ElevatedButton.icon(
-    icon: const Icon(Icons.edit),
-    label: const Text("Edit Booking"),
-    onPressed: () async {
-
-  final result = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => EditBookingScreen(
-        booking: booking,
-      ),
-    ),
-  );
-
-  if (result == true) {
-    Navigator.pop(context, true);
-  }
-
-
-    },
-  ),
-),
-
-const SizedBox(height: 15),
-
-SizedBox(
-  width: double.infinity,
-  child: ElevatedButton.icon(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    ),
-    icon: const Icon(Icons.delete),
-    label: const Text("Delete Booking"),
-    onPressed: () async {
-
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text("Delete Booking"),
-            content: const Text(
-              "Are you sure you want to delete this booking?",
-            ),
-            actions: [
-
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context, false);
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.person),
+                label: const Text('View Customer Profile'),
+                onPressed: () async {
+                  try {
+                    await CustomerService.upsertFromBooking(booking);
+                    final customer = await CustomerService.getByPhone(
+                      booking.phoneNumber,
+                    );
+                    if (!context.mounted || customer == null) return;
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CustomerDetailsScreen(customer: customer),
+                      ),
+                    );
+                  } catch (error) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Unable to open customer: $error')),
+                    );
+                  }
                 },
-                child: const Text("Cancel"),
               ),
+            ),
+            const SizedBox(height: 20),
 
-              ElevatedButton(
-                onPressed: () {
+if (UserService.canManageBookings) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.edit),
+                  label: const Text("Edit Booking"),
+                  onPressed: () async {
+              
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditBookingScreen(
+                      booking: booking,
+                    ),
+                  ),
+                );
+              
+                if (result == true) {
                   Navigator.pop(context, true);
-                },
-                child: const Text("Delete"),
+                }
+              
+              
+                  },
+                ),
               ),
-
+              
+              const SizedBox(height: 15),
+              
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.delete),
+                  label: const Text("Delete Booking"),
+                  onPressed: () async {
+              
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text("Delete Booking"),
+                          content: const Text(
+                            "Are you sure you want to delete this booking?",
+                          ),
+                          actions: [
+              
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, false);
+                              },
+                              child: const Text("Cancel"),
+                            ),
+              
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context, true);
+                              },
+                              child: const Text("Delete"),
+                            ),
+              
+                          ],
+                        );
+                      },
+                    );
+              
+                    if (confirm == true) {
+              
+                      final deleted = await BookingService.deleteBooking(booking);
+              
+                      if (!context.mounted) return;
+              
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: deleted ? Colors.red : Colors.orange,
+                          content: Text(
+                            deleted
+                                ? "Booking Deleted"
+                                : "Delete failed. Please check the internet and try again.",
+                          ),
+                        ),
+                      );
+              
+                      if (deleted) {
+                        Navigator.pop(context, true);
+                      }
+                    }
+                  },
+                ),
+              ),
             ],
-          );
-        },
-      );
-
-      if (confirm == true) {
-
-        final deleted = await BookingService.deleteBooking(booking);
-
-        if (!context.mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: deleted ? Colors.red : Colors.orange,
-            content: Text(
-              deleted
-                  ? "Booking Deleted"
-                  : "Delete failed. Please check the internet and try again.",
-            ),
-          ),
-        );
-
-        if (deleted) {
-          Navigator.pop(context, true);
-        }
-      }
-    },
-  ),
-),
 
           ],
         ),

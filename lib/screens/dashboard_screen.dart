@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/booking_service.dart';
+import '../services/user_service.dart';
 import 'add_booking_screen.dart';
 import 'booking_history_screen.dart';
 import 'current_guests_screen.dart';
@@ -9,6 +10,9 @@ import 'future_bookings_screen.dart';
 import 'room_status_screen.dart';
 import 'today_checkins_screen.dart';
 import 'today_checkouts_screen.dart';
+import 'staff_management_screen.dart';
+import 'customer_list_screen.dart';
+import 'reports_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -105,10 +109,106 @@ class DashboardScreen extends StatelessWidget {
                   );
                 },
               ),
-              const SizedBox(height: 8),
-              Card(
-                elevation: 5,
-                child: ListTile(
+              if (UserService.isAdmin) ...[
+                const SizedBox(height: 8),
+                Card(
+                  elevation: 5,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 10,
+                    ),
+                    leading: const CircleAvatar(
+                      radius: 24,
+                      child: Icon(Icons.people_alt),
+                    ),
+                    title: const Text(
+                      'Customers',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    subtitle: const Text('Search customers and view booking history'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CustomerListScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  elevation: 5,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 10,
+                    ),
+                    leading: const CircleAvatar(
+                      radius: 24,
+                      child: Icon(Icons.analytics),
+                    ),
+                    title: const Text(
+                      'Reports & Analytics',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    subtitle: const Text('Revenue, balances, bookings and occupancy'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ReportsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  elevation: 5,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 10,
+                    ),
+                    leading: const CircleAvatar(
+                      radius: 24,
+                      child: Icon(Icons.manage_accounts),
+                    ),
+                    title: const Text(
+                      'Staff Management',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    subtitle: const Text('Add, edit, enable or disable staff'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const StaffManagementScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+              if (UserService.canManageBookings) ...[
+                const SizedBox(height: 8),
+                Card(
+                  elevation: 5,
+                  child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 18,
                     vertical: 10,
@@ -137,6 +237,7 @@ class DashboardScreen extends StatelessWidget {
                   },
                 ),
               ),
+              ],
             ],
           );
         },

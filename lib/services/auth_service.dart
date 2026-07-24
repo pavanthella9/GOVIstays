@@ -1,12 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'user_service.dart';
+
 class AuthService {
   AuthService._();
 
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
   static User? get currentUser => _auth.currentUser;
-
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   static Future<void> signIn({
@@ -24,6 +25,18 @@ class AuthService {
         email: normalizedEmail,
         password: password,
       );
+      final profile = await UserService.loadCurrentUser();
+      if (!profile.active) {
+        await signOut();
+        throw const AuthException(
+          'This staff account is inactive. Contact the administrator.',
+        );
+      }
+    } on AuthException {
+      rethrow;
+    } on UserServiceException catch (error) {
+      await _auth.signOut();
+      throw AuthException(error.message);
     } on FirebaseAuthException catch (error) {
       throw AuthException(_messageForCode(error.code));
     } catch (_) {
@@ -34,6 +47,7 @@ class AuthService {
   }
 
   static Future<void> signOut() async {
+    UserService.clearCurrentUser();
     await _auth.signOut();
   }
 
@@ -59,9 +73,7 @@ class AuthService {
 
 class AuthException implements Exception {
   final String message;
-
   const AuthException(this.message);
-
   @override
   String toString() => message;
 }
