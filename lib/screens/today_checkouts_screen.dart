@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/booking_service.dart';
 import 'booking_details_screen.dart';
+import '../services/user_service.dart';
 
 class TodayCheckoutsScreen extends StatelessWidget {
   const TodayCheckoutsScreen({super.key});
@@ -56,8 +57,8 @@ class TodayCheckoutsScreen extends StatelessWidget {
                     child: Text(
                       'Rooms: ${booking.rooms.join(', ')}\n'
                       'Guests: ${booking.guests}\n'
-                      'Phone: ${booking.phoneNumber}\n'
-                      'Balance: ₹${booking.balanceAmount.toStringAsFixed(0)}',
+                      'Phone: ${booking.phoneNumber}'
+                      '${UserService.canViewBalance ? '\nBalance: ₹${booking.balanceAmount.toStringAsFixed(0)}' : ''}',
                     ),
                   ),
                   isThreeLine: true,

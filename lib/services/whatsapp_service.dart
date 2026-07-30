@@ -6,25 +6,36 @@ import '../models/booking.dart';
 class WhatsAppService {
   WhatsAppService._();
 
+  static const String homestayName = 'Hillside Heaven Homestay';
+  static const String contactNumber = '+91-77949-72727';
+  static const String locationUrl =
+      'https://maps.app.goo.gl/njWXCUJjq7jwzonq6?g_st=ac';
+
   static String buildBookingMessage(Booking booking) {
-    return '''🏡 GOVIstays Booking Confirmation
+    return '''🏡 $homestayName
 
-Hello ${booking.customerName},
+Dear ${booking.customerName},
 
-Your booking has been confirmed.
+Thank you for choosing $homestayName.
+Your booking has been successfully confirmed.
 
 Booking ID: ${booking.bookingId}
+Booking Date: ${_formatDateTime(booking.bookingCreatedAt)}
 Room(s): ${booking.rooms.join(', ')}
-Check-in: ${_formatDate(booking.checkIn)}
-Check-out: ${_formatDate(booking.checkOut)}
 Guests: ${booking.guests}
+Check-in: ${_formatDateTime(booking.checkIn)}
+Check-out: ${_formatDateTime(booking.checkOut)}
 
-Total: ₹${_money(booking.totalAmount)}
-Advance: ₹${_money(booking.advanceAmount)}
-Balance: ₹${_money(booking.balanceAmount)}
+📍 Location:
+$locationUrl
 
-Thank you for choosing GOVIstays.
-Have a pleasant stay!''';
+📞 Contact:
+$contactNumber
+
+We look forward to welcoming you and hope you have a comfortable and pleasant stay.
+
+Thank you,
+🏡 $homestayName''';
   }
 
   static Future<void> openWhatsApp(Booking booking) async {
@@ -33,17 +44,13 @@ Have a pleasant stay!''';
       throw const WhatsAppException('Enter a valid customer phone number.');
     }
 
-    final message = buildBookingMessage(booking);
     final uri = Uri.https(
       'wa.me',
       '/$phone',
-      <String, String>{'text': message},
+      <String, String>{'text': buildBookingMessage(booking)},
     );
 
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched) {
       throw const WhatsAppException(
         'WhatsApp could not be opened on this device.',
@@ -67,16 +74,14 @@ Have a pleasant stay!''';
     return digits.length >= 10 && digits.length <= 15 ? digits : '';
   }
 
-  static String _formatDate(DateTime value) {
-    final day = value.day.toString().padLeft(2, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    return '$day/$month/${value.year}';
-  }
-
-  static String _money(double value) {
-    return value == value.roundToDouble()
-        ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(2);
+  static String _formatDateTime(DateTime value) {
+    final local = value.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+    return '$day/$month/${local.year}, $hour:$minute $period';
   }
 }
 

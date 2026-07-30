@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../models/booking.dart';
 import '../services/booking_service.dart';
-import '../services/user_service.dart';
 import '../services/customer_service.dart';
+import '../services/user_service.dart';
 import '../services/whatsapp_service.dart';
 import 'customer_details_screen.dart';
 import 'edit_booking_screen.dart';
@@ -10,59 +11,82 @@ import 'edit_booking_screen.dart';
 class BookingDetailsScreen extends StatelessWidget {
   final Booking booking;
 
-  const BookingDetailsScreen({
-    super.key,
-    required this.booking,
-  });
+  const BookingDetailsScreen({super.key, required this.booking});
+
+  String _formatDateTime(DateTime value) {
+    final local = value.toLocal();
+    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+    return '${local.day.toString().padLeft(2, '0')}/'
+        '${local.month.toString().padLeft(2, '0')}/${local.year} '
+        '$hour:$minute $period';
+  }
+
+  String _money(double value) => value.toStringAsFixed(
+        value == value.roundToDouble() ? 0 : 2,
+      );
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Booking Details"),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
+    final isAdmin = UserService.isAdmin;
 
-            Text(
-              booking.customerName,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+    return Scaffold(
+      appBar: AppBar(title: const Text('Booking Details')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            booking.customerName,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          _row('Booking ID', booking.bookingId),
+          _row('Booking Date', _formatDateTime(booking.bookingCreatedAt)),
+          _row('Phone', booking.phoneNumber),
+          _row('Address', booking.address),
+          _row('Guests', booking.guests.toString()),
+          _row('Rooms', booking.rooms.join(', ')),
+          _row('Check-in', _formatDateTime(booking.checkIn)),
+          _row('Check-out', _formatDateTime(booking.checkOut)),
+          if (isAdmin) ...[
+            const Divider(height: 28),
+            _row('Total', '₹${_money(booking.totalAmount)}'),
+            _row('Advance', '₹${_money(booking.advanceAmount)}'),
+            _row('Balance', '₹${_money(booking.balanceAmount)}'),
+          ] else if (UserService.canViewBalance) ...[
+            const Divider(height: 28),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.payments_outlined),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Balance to Collect',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Text(
+                      '₹${_money(booking.balanceAmount)}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            Text("Booking ID : ${booking.bookingId}"),
-            Text("Phone : ${booking.phoneNumber}"),
-            Text("Address : ${booking.address}"),
-            Text("Guests : ${booking.guests}"),
-
-            const SizedBox(height: 15),
-
-            Text("Rooms : ${booking.rooms.join(", ")}"),
-
-            const SizedBox(height: 15),
-
-            Text("Check In : ${booking.checkIn}"),
-            Text("Check Out : ${booking.checkOut}"),
-
-            const SizedBox(height: 15),
-
-            Text("Total : ₹${booking.totalAmount}"),
-            Text("Advance : ₹${booking.advanceAmount}"),
-            Text("Balance : ₹${booking.balanceAmount}"),
-
-            const SizedBox(height: 20),
-
-            Text("Notes"),
-
-            Text(booking.notes),
-            const SizedBox(height: 24),
-
+          ],
+          const Divider(height: 28),
+          const Text('Notes', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text(booking.notes.isEmpty ? 'No notes' : booking.notes),
+          const SizedBox(height: 24),
+          if (isAdmin) ...[
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -91,139 +115,112 @@ class BookingDetailsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+          ],
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.chat),
+              label: const Text('Send WhatsApp Confirmation'),
+              onPressed: () async {
+                try {
+                  await WhatsAppService.openWhatsApp(booking);
+                } on WhatsAppException catch (error) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+                  );
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.copy),
+              label: const Text('Copy Booking Details'),
+              onPressed: () async {
+                await WhatsAppService.copyBookingDetails(booking);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Booking details copied.')),
+                );
+              },
+            ),
+          ),
+          if (UserService.canManageBookings) ...[
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
-                icon: const Icon(Icons.chat),
-                label: const Text('Send WhatsApp Confirmation'),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.edit),
+                label: const Text('Edit Booking'),
                 onPressed: () async {
-                  try {
-                    await WhatsAppService.openWhatsApp(booking);
-                  } on WhatsAppException catch (error) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(error.message),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditBookingScreen(booking: booking),
+                    ),
+                  );
+                  if (result == true && context.mounted) {
+                    Navigator.pop(context, true);
                   }
                 },
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 15),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.copy),
-                label: const Text('Copy Booking Details'),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.delete),
+                label: const Text('Delete Booking'),
                 onPressed: () async {
-                  await WhatsAppService.copyBookingDetails(booking);
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Booking details copied.')),
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Delete Booking?'),
+                      content: const Text('This action cannot be undone.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
                   );
+                  if (confirmed != true) return;
+                  final deleted = await BookingService.deleteBooking(booking);
+                  if (!context.mounted) return;
+                  if (deleted) Navigator.pop(context, true);
                 },
               ),
             ),
-            const SizedBox(height: 20),
-
-if (UserService.canManageBookings) ...[
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.edit),
-                  label: const Text("Edit Booking"),
-                  onPressed: () async {
-              
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EditBookingScreen(
-                      booking: booking,
-                    ),
-                  ),
-                );
-              
-                if (result == true) {
-                  Navigator.pop(context, true);
-                }
-              
-              
-                  },
-                ),
-              ),
-              
-              const SizedBox(height: 15),
-              
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  icon: const Icon(Icons.delete),
-                  label: const Text("Delete Booking"),
-                  onPressed: () async {
-              
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text("Delete Booking"),
-                          content: const Text(
-                            "Are you sure you want to delete this booking?",
-                          ),
-                          actions: [
-              
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context, false);
-                              },
-                              child: const Text("Cancel"),
-                            ),
-              
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context, true);
-                              },
-                              child: const Text("Delete"),
-                            ),
-              
-                          ],
-                        );
-                      },
-                    );
-              
-                    if (confirm == true) {
-              
-                      final deleted = await BookingService.deleteBooking(booking);
-              
-                      if (!context.mounted) return;
-              
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: deleted ? Colors.red : Colors.orange,
-                          content: Text(
-                            deleted
-                                ? "Booking Deleted"
-                                : "Delete failed. Please check the internet and try again.",
-                          ),
-                        ),
-                      );
-              
-                      if (deleted) {
-                        Navigator.pop(context, true);
-                      }
-                    }
-                  },
-                ),
-              ),
-            ],
-
           ],
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          Expanded(child: Text(value)),
+        ],
       ),
     );
   }

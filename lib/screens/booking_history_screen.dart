@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/booking_service.dart';
 import 'booking_details_screen.dart';
+import '../services/user_service.dart';
 
 class BookingHistoryScreen extends StatefulWidget {
   const BookingHistoryScreen({super.key});
@@ -111,12 +112,12 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                                 '${_formatDate(booking.checkOut)}\n'
                                 'Booking ID: ${booking.bookingId}',
                               ),
-                              trailing: Text(
-                                '₹${booking.balanceAmount}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              trailing: UserService.canViewBalance
+                                  ? Text(
+                                      '₹${booking.balanceAmount}',
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    )
+                                  : null,
                               isThreeLine: false,
                               onTap: () async {
                                 await Navigator.push(

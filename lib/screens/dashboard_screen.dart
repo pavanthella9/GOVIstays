@@ -236,7 +236,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
               ],
-              if (UserService.canManageBookings) ...[
+              if (UserService.canCreateBookings) ...[
                 const SizedBox(height: 8),
                 Card(
                   elevation: 5,

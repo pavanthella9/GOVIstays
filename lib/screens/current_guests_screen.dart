@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/booking_service.dart';
 import 'booking_details_screen.dart';
+import '../services/user_service.dart';
 
 class CurrentGuestsScreen extends StatefulWidget {
   const CurrentGuestsScreen({super.key});
@@ -109,12 +110,12 @@ class _CurrentGuestsScreenState extends State<CurrentGuestsScreen> {
                                 'Room: ${booking.rooms.join(', ')}\n'
                                 'Check-out: ${_formatDate(booking.checkOut)}',
                               ),
-                              trailing: Text(
-                                '₹${booking.balanceAmount}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              trailing: UserService.canViewBalance
+                                  ? Text(
+                                      '₹${booking.balanceAmount}',
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    )
+                                  : null,
                               isThreeLine: true,
                               onTap: () async {
                                 await Navigator.push(

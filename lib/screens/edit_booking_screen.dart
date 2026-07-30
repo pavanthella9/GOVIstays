@@ -83,48 +83,106 @@ class _EditBookingScreenState
   }
 
   Future<void> pickCheckInDate() async {
-
+    final current = checkInDate ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: checkInDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
+      initialDate: current,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime(2035),
     );
-
-    if (picked != null) {
-      setState(() {
-        checkInDate = picked;
-
-        if (checkOutDate != null &&
-            !checkOutDate!.isAfter(checkInDate!)) {
-          checkOutDate = null;
-        }
-      });
-    }
+    if (picked == null) return;
+    setState(() {
+      checkInDate = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        current.hour,
+        current.minute,
+      );
+      if (checkOutDate != null && !checkOutDate!.isAfter(checkInDate!)) {
+        checkOutDate = null;
+      }
+    });
   }
 
   Future<void> pickCheckOutDate() async {
-
     if (checkInDate == null) return;
-
+    final current = checkOutDate ?? checkInDate!.add(const Duration(hours: 12));
     final picked = await showDatePicker(
       context: context,
-      initialDate: checkOutDate ??
-          checkInDate!.add(
-            const Duration(days: 1),
-          ),
-      firstDate:
-          checkInDate!.add(
-            const Duration(days: 1),
-          ),
+      initialDate: current,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime(2035),
     );
-
-    if (picked != null) {
-      setState(() {
-        checkOutDate = picked;
-      });
+    if (picked == null) return;
+    final value = DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      current.hour,
+      current.minute,
+    );
+    if (!value.isAfter(checkInDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Check-Out must be after Check-In.')),
+      );
+      return;
     }
+    setState(() => checkOutDate = value);
+  }
+
+  Future<void> pickCheckInTime() async {
+    if (checkInDate == null) return;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(checkInDate!),
+    );
+    if (picked == null) return;
+    final value = DateTime(
+      checkInDate!.year,
+      checkInDate!.month,
+      checkInDate!.day,
+      picked.hour,
+      picked.minute,
+    );
+    setState(() {
+      checkInDate = value;
+      if (checkOutDate != null && !checkOutDate!.isAfter(value)) {
+        checkOutDate = null;
+      }
+    });
+  }
+
+  Future<void> pickCheckOutTime() async {
+    if (checkOutDate == null || checkInDate == null) return;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(checkOutDate!),
+    );
+    if (picked == null) return;
+    final value = DateTime(
+      checkOutDate!.year,
+      checkOutDate!.month,
+      checkOutDate!.day,
+      picked.hour,
+      picked.minute,
+    );
+    if (!value.isAfter(checkInDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Check-Out must be after Check-In.')),
+      );
+      return;
+    }
+    setState(() => checkOutDate = value);
+  }
+
+  String formatDateTime(DateTime value) {
+    final hour = value.hour % 12 == 0 ? 12 : value.hour % 12;
+    final minute = value.minute.toString().padLeft(2, '0');
+    final period = value.hour >= 12 ? 'PM' : 'AM';
+    return '${value.day.toString().padLeft(2, '0')}/'
+        '${value.month.toString().padLeft(2, '0')}/${value.year} '
+        '$hour:$minute $period';
   }
 
   @override
@@ -277,10 +335,15 @@ class _EditBookingScreenState
         title: Text(
           checkInDate == null
               ? "Select Check-In Date"
-              : "Check-In : ${checkInDate!.toLocal().toString().split(' ')[0]}",
+              : "Check-In : ${formatDateTime(checkInDate!)}",
         ),
         trailing: const Icon(Icons.calendar_today),
         onTap: pickCheckInDate,
+      ),
+      TextButton.icon(
+        onPressed: checkInDate == null ? null : pickCheckInTime,
+        icon: const Icon(Icons.access_time),
+        label: const Text('Change Check-In Time'),
       ),
 
       const SizedBox(height: 10),
@@ -293,10 +356,15 @@ class _EditBookingScreenState
         title: Text(
           checkOutDate == null
               ? "Select Check-Out Date"
-              : "Check-Out : ${checkOutDate!.toLocal().toString().split(' ')[0]}",
+              : "Check-Out : ${formatDateTime(checkOutDate!)}",
         ),
         trailing: const Icon(Icons.calendar_today),
         onTap: pickCheckOutDate,
+      ),
+      TextButton.icon(
+        onPressed: checkOutDate == null ? null : pickCheckOutTime,
+        icon: const Icon(Icons.access_time),
+        label: const Text('Change Check-Out Time'),
       ),
 
       const SizedBox(height: 20),
@@ -468,6 +536,7 @@ SizedBox(
 
       final updatedBooking = Booking(
         bookingId: widget.booking.bookingId,
+        bookingCreatedAt: widget.booking.bookingCreatedAt,
         customerName: customerNameController.text.trim(),
         phoneNumber: phoneController.text.trim(),
         address: addressController.text.trim(),

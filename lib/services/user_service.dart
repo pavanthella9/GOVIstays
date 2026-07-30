@@ -23,6 +23,9 @@ class UserService {
   static AppUser? get currentUser => currentUserNotifier.value;
   static bool get isAdmin => currentUser?.isAdmin == true;
   static bool get canManageBookings => isAdmin;
+  static bool get canCreateBookings => currentUser?.active == true;
+  static bool get canViewFinancials => isAdmin;
+  static bool get canViewBalance => currentUser?.active == true;
 
   static Future<AppUser> loadCurrentUser({bool createIfMissing = true}) async {
     final firebaseUser = FirebaseAuth.instance.currentUser;

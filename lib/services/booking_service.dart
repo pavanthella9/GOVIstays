@@ -106,8 +106,12 @@ class BookingService {
     }
   }
 
-  static String generateBookingId() =>
-      'GST${DateTime.now().millisecondsSinceEpoch}';
+  static String generateBookingId() {
+    final now = DateTime.now();
+    String two(int value) => value.toString().padLeft(2, '0');
+    return 'HHH-${now.year}${two(now.month)}${two(now.day)}-'
+        '${two(now.hour)}${two(now.minute)}${two(now.second)}';
+  }
 
   static Future<bool> addBooking(Booking booking) async {
     for (final room in booking.rooms) {

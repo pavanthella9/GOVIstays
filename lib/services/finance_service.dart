@@ -89,6 +89,7 @@ class FinanceService {
 
     final updated = Booking(
       bookingId: booking.bookingId,
+      bookingCreatedAt: booking.bookingCreatedAt,
       customerName: booking.customerName,
       phoneNumber: booking.phoneNumber,
       address: booking.address,
