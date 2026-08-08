@@ -6,6 +6,20 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/booking.dart';
 
+class RoomAvailabilitySegment {
+  final DateTime start;
+  final DateTime end;
+  final bool isBooked;
+  final Booking? booking;
+
+  const RoomAvailabilitySegment({
+    required this.start,
+    required this.end,
+    required this.isBooked,
+    this.booking,
+  });
+}
+
 class BookingService {
   static const List<String> allRooms = [
     'Master Room 1',
@@ -221,6 +235,105 @@ class BookingService {
       }
     }
     return true;
+  }
+
+
+  /// Returns bookings that touch any part of the supplied calendar day.
+  /// Full DateTime values are used, so partial-day and back-to-back stays
+  /// are handled correctly.
+  static List<Booking> getBookingsForDate(DateTime date) {
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    final result = bookings.where((booking) {
+      return booking.checkIn.isBefore(dayEnd) &&
+          booking.checkOut.isAfter(dayStart);
+    }).toList();
+
+    result.sort((a, b) => a.checkIn.compareTo(b.checkIn));
+    return result;
+  }
+
+  static List<Booking> getRoomBookingsForDate(
+    String room,
+    DateTime date,
+  ) {
+    final normalizedRoom = _normalizeRoomName(room);
+    return getBookingsForDate(date).where((booking) {
+      return booking.rooms.any(
+        (bookedRoom) =>
+            _normalizeRoomName(bookedRoom) == normalizedRoom,
+      );
+    }).toList()
+      ..sort((a, b) => a.checkIn.compareTo(b.checkIn));
+  }
+
+  /// Builds a complete midnight-to-midnight timeline for one room.
+  /// Available gaps and booked portions are both returned.
+  static List<RoomAvailabilitySegment> getRoomAvailabilityForDate(
+    String room,
+    DateTime date,
+  ) {
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    final roomBookings = getRoomBookingsForDate(room, date);
+
+    if (roomBookings.isEmpty) {
+      return [
+        RoomAvailabilitySegment(
+          start: dayStart,
+          end: dayEnd,
+          isBooked: false,
+        ),
+      ];
+    }
+
+    final segments = <RoomAvailabilitySegment>[];
+    var cursor = dayStart;
+
+    for (final booking in roomBookings) {
+      final bookedStart =
+          booking.checkIn.isAfter(dayStart) ? booking.checkIn : dayStart;
+      final bookedEnd =
+          booking.checkOut.isBefore(dayEnd) ? booking.checkOut : dayEnd;
+
+      if (!bookedEnd.isAfter(bookedStart)) continue;
+
+      if (cursor.isBefore(bookedStart)) {
+        segments.add(
+          RoomAvailabilitySegment(
+            start: cursor,
+            end: bookedStart,
+            isBooked: false,
+          ),
+        );
+      }
+
+      segments.add(
+        RoomAvailabilitySegment(
+          start: bookedStart,
+          end: bookedEnd,
+          isBooked: true,
+          booking: booking,
+        ),
+      );
+
+      if (bookedEnd.isAfter(cursor)) {
+        cursor = bookedEnd;
+      }
+    }
+
+    if (cursor.isBefore(dayEnd)) {
+      segments.add(
+        RoomAvailabilitySegment(
+          start: cursor,
+          end: dayEnd,
+          isBooked: false,
+        ),
+      );
+    }
+
+    return segments;
   }
 
   static List<Booking> getTodayCheckIns() {

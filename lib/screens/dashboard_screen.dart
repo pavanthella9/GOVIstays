@@ -5,6 +5,7 @@ import '../services/booking_service.dart';
 import '../services/user_service.dart';
 import 'add_booking_screen.dart';
 import 'booking_history_screen.dart';
+import 'booking_calendar_screen.dart';
 import 'current_guests_screen.dart';
 import 'future_bookings_screen.dart';
 import 'room_status_screen.dart';
@@ -110,6 +111,43 @@ class DashboardScreen extends StatelessWidget {
                   );
                 },
               ),
+              Card(
+                elevation: 5,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  leading: const CircleAvatar(
+                    radius: 24,
+                    child: Icon(Icons.calendar_month),
+                  ),
+                  title: const Text(
+                    'Booking Calendar',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'View room bookings and partial-day availability',
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 18,
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const BookingCalendarScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
               if (UserService.isAdmin) ...[
                 const SizedBox(height: 8),
                 Card(
