@@ -24,10 +24,13 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     super.dispose();
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDateTime(DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
-    return '$day-$month-${date.year}';
+    final minute = date.minute.toString().padLeft(2, '0');
+    final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '$day-$month-${date.year} $hour:$minute $period';
   }
 
   @override
@@ -108,8 +111,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                               subtitle: Text(
                                 'Phone: ${booking.phoneNumber}\n'
                                 'Room: ${booking.rooms.join(', ')}\n'
-                                '${_formatDate(booking.checkIn)} to '
-                                '${_formatDate(booking.checkOut)}\n'
+                                '${_formatDateTime(booking.checkIn)} to '
+                                '${_formatDateTime(booking.checkOut)}\n'
                                 'Booking ID: ${booking.bookingId}',
                               ),
                               trailing: UserService.canViewBalance

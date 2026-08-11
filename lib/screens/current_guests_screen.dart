@@ -24,10 +24,13 @@ class _CurrentGuestsScreenState extends State<CurrentGuestsScreen> {
     super.dispose();
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDateTime(DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
-    return '$day-$month-${date.year}';
+    final minute = date.minute.toString().padLeft(2, '0');
+    final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '$day-$month-${date.year} $hour:$minute $period';
   }
 
   @override
@@ -108,7 +111,7 @@ class _CurrentGuestsScreenState extends State<CurrentGuestsScreen> {
                               subtitle: Text(
                                 'Phone: ${booking.phoneNumber}\n'
                                 'Room: ${booking.rooms.join(', ')}\n'
-                                'Check-out: ${_formatDate(booking.checkOut)}',
+                                'Check-out: ${_formatDateTime(booking.checkOut)}',
                               ),
                               trailing: UserService.canViewBalance
                                   ? Text(

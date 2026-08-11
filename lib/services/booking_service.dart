@@ -36,11 +36,17 @@ class BookingService {
   static final List<Booking> bookings = [];
   static final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
   static StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _subscription;
+  static Timer? _clockTimer;
 
   static CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection(_collectionName);
 
   static Future<void> initialize() async {
+    // Refresh time-dependent dashboard/current/future/history status automatically.
+    _clockTimer ??= Timer.periodic(const Duration(minutes: 1), (_) {
+      _notifyChanges();
+    });
+
     await _migrateExistingHiveBookingsIfNeeded();
 
     await _subscription?.cancel();
@@ -355,29 +361,28 @@ class BookingService {
   }
 
   static List<Booking> getCurrentGuests() {
-    final today = _dateOnly(DateTime.now());
+    final now = DateTime.now();
     final result = bookings.where((booking) {
-      final checkIn = _dateOnly(booking.checkIn);
-      final checkOut = _dateOnly(booking.checkOut);
-      return !today.isBefore(checkIn) && today.isBefore(checkOut);
+      return !now.isBefore(booking.checkIn) &&
+          now.isBefore(booking.checkOut);
     }).toList();
     result.sort((a, b) => a.checkOut.compareTo(b.checkOut));
     return result;
   }
 
   static List<Booking> getFutureBookings() {
-    final today = _dateOnly(DateTime.now());
+    final now = DateTime.now();
     final result = bookings
-        .where((booking) => _dateOnly(booking.checkIn).isAfter(today))
+        .where((booking) => booking.checkIn.isAfter(now))
         .toList();
     result.sort((a, b) => a.checkIn.compareTo(b.checkIn));
     return result;
   }
 
   static List<Booking> getBookingHistory() {
-    final today = _dateOnly(DateTime.now());
+    final now = DateTime.now();
     final result = bookings
-        .where((booking) => _dateOnly(booking.checkOut).isBefore(today))
+        .where((booking) => !booking.checkOut.isAfter(now))
         .toList();
     result.sort((a, b) => b.checkOut.compareTo(a.checkOut));
     return result;
@@ -395,7 +400,7 @@ class BookingService {
   }
 
   static bool isRoomOccupiedToday(String room) {
-    final today = _dateOnly(DateTime.now());
+    final now = DateTime.now();
     final normalizedRoom = _normalizeRoomName(room);
 
     for (final booking in bookings) {
@@ -404,9 +409,9 @@ class BookingService {
       );
       if (!bookingHasRoom) continue;
 
-      final checkIn = _dateOnly(booking.checkIn);
-      final checkOut = _dateOnly(booking.checkOut);
-      if (!today.isBefore(checkIn) && today.isBefore(checkOut)) return true;
+      if (!now.isBefore(booking.checkIn) && now.isBefore(booking.checkOut)) {
+        return true;
+      }
     }
     return false;
   }

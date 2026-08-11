@@ -30,6 +30,7 @@ class BookingDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAdmin = UserService.isAdmin;
+    final isCompleted = !booking.checkOut.isAfter(DateTime.now());
 
     return Scaffold(
       appBar: AppBar(title: const Text('Booking Details')),
@@ -115,6 +116,56 @@ class BookingDetailsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+          ],
+          if (isAdmin && isCompleted) ...[
+            const SizedBox(height: 14),
+            Card(
+              color: Colors.green.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.star_rate_rounded, color: Colors.amber),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Guest has checked out',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Send a WhatsApp message requesting a Google review.',
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.reviews_outlined),
+                      label: const Text('Request Google Review'),
+                      onPressed: () async {
+                        try {
+                          await WhatsAppService.openGoogleReviewRequest(
+                            booking,
+                          );
+                        } on WhatsAppException catch (error) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error.message),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
           SizedBox(
             width: double.infinity,

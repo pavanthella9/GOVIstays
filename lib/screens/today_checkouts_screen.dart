@@ -7,6 +7,15 @@ import '../services/user_service.dart';
 class TodayCheckoutsScreen extends StatelessWidget {
   const TodayCheckoutsScreen({super.key});
 
+  String _formatDateTime(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '$day-$month-${date.year} $hour:$minute $period';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,7 +66,8 @@ class TodayCheckoutsScreen extends StatelessWidget {
                     child: Text(
                       'Rooms: ${booking.rooms.join(', ')}\n'
                       'Guests: ${booking.guests}\n'
-                      'Phone: ${booking.phoneNumber}'
+                      'Phone: ${booking.phoneNumber}\n'
+                      'Check-out: ${_formatDateTime(booking.checkOut)}'
                       '${UserService.canViewBalance ? '\nBalance: ₹${booking.balanceAmount.toStringAsFixed(0)}' : ''}',
                     ),
                   ),

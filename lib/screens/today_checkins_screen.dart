@@ -6,6 +6,15 @@ import 'booking_details_screen.dart';
 class TodayCheckinsScreen extends StatelessWidget {
   const TodayCheckinsScreen({super.key});
 
+  String _formatDateTime(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '$day-$month-${date.year} $hour:$minute $period';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,7 +63,7 @@ class TodayCheckinsScreen extends StatelessWidget {
                       "Rooms : ${booking.rooms.join(', ')}\n"
                       "Guests : ${booking.guests}\n"
                       "Phone : ${booking.phoneNumber}\n"
-                      "Check-in : ${booking.checkIn.day}/${booking.checkIn.month}/${booking.checkIn.year}",
+                      "Check-in : ${_formatDateTime(booking.checkIn)}",
                     ),
                   ),
                   isThreeLine: true,

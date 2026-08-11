@@ -10,6 +10,8 @@ class WhatsAppService {
   static const String contactNumber = '+91-77949-72727';
   static const String locationUrl =
       'https://maps.app.goo.gl/njWXCUJjq7jwzonq6?g_st=ac';
+  static const String googleReviewUrl =
+      'https://g.page/r/CV8Y_IQu0If7EBE/review';
 
   static String buildBookingMessage(Booking booking) {
     return '''🏡 $homestayName
@@ -61,6 +63,55 @@ Thank you,
   static Future<void> copyBookingDetails(Booking booking) async {
     await Clipboard.setData(
       ClipboardData(text: buildBookingMessage(booking)),
+    );
+  }
+
+  static String buildGoogleReviewMessage(Booking booking) {
+    return '''Hi ${booking.customerName} 👋
+
+Thank you for choosing $homestayName.
+
+We hope you had a comfortable and pleasant stay with us.
+
+If you enjoyed your stay, we would really appreciate it if you could take a moment to share your experience on Google.
+
+⭐ Leave us a review:
+$googleReviewUrl
+
+Your feedback helps us improve and helps other guests choose $homestayName with confidence.
+
+Thank you once again,
+🏡 $homestayName
+📞 $contactNumber''';
+  }
+
+  static Future<void> openGoogleReviewRequest(Booking booking) async {
+    final phone = _normalizePhone(booking.phoneNumber);
+    if (phone.isEmpty) {
+      throw const WhatsAppException('Enter a valid customer phone number.');
+    }
+
+    final uri = Uri.https(
+      'wa.me',
+      '/$phone',
+      <String, String>{'text': buildGoogleReviewMessage(booking)},
+    );
+
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!launched) {
+      throw const WhatsAppException(
+        'WhatsApp could not be opened on this device.',
+      );
+    }
+  }
+
+  static Future<void> copyGoogleReviewRequest(Booking booking) async {
+    await Clipboard.setData(
+      ClipboardData(text: buildGoogleReviewMessage(booking)),
     );
   }
 
