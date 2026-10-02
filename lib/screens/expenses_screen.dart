@@ -262,9 +262,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       ),
     );
 
-    nameController.dispose();
-    amountController.dispose();
-    notesController.dispose();
+    // Do not dispose these controllers immediately after showDialog returns.
+    // On some Android/Flutter combinations the focused EditableText can still
+    // be completing its focus/input-connection cleanup for a frame or two.
+    // Immediate disposal causes "TextEditingController was used after being disposed".
+    // They are short-lived dialog controllers and will be garbage-collected
+    // after this method returns.
 
     if (saved == true && mounted) {
       setState(() {
