@@ -167,10 +167,55 @@ class BookingService {
       throw StateError('Only admin can correct actual timestamps.');
     }
     final ref = _collection.doc(bookingId);
+    // Read potential room occupants before the transaction, then re-read
+    // their documents inside it to detect changes before recording arrival.
+    final possibleOccupants = <DocumentReference<Map<String, dynamic>>>[];
+    if (checkIn && correctedTime == null) {
+      final target = await ref.get();
+      if (!target.exists) throw StateError('Booking not found.');
+      final targetBooking = Booking.fromFirestore(target);
+      final now = DateTime.now();
+      if (!now.isBefore(targetBooking.checkOut)) {
+        throw StateError('This booking is historical; check-in is unavailable.');
+      }
+      final active = await _collection
+          .where('actualCheckIn', isNull: false)
+          .get();
+      for (final doc in active.docs) {
+        if (doc.id == bookingId) continue;
+        final other = Booking.fromFirestore(doc);
+        if (other.actualCheckOut != null) continue;
+        final targetRooms = targetBooking.rooms.map(_normalizeRoomName).toSet();
+        if (other.rooms.any((room) => targetRooms.contains(_normalizeRoomName(room)))) {
+          possibleOccupants.add(doc.reference);
+        }
+      }
+    }
     await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(ref);
       if (!snapshot.exists) throw StateError('Booking not found.');
       final data = snapshot.data()!;
+      if (checkIn && correctedTime == null) {
+        final scheduledOut = (data['checkOut'] as Timestamp).toDate();
+        if (!DateTime.now().isBefore(scheduledOut)) {
+          throw StateError('Historical bookings cannot be checked in.');
+        }
+        for (final occupantRef in possibleOccupants) {
+          final occupant = await transaction.get(occupantRef);
+          if (!occupant.exists) continue;
+          final occupantData = occupant.data()!;
+          if (occupantData['actualCheckIn'] == null ||
+              occupantData['actualCheckOut'] != null) continue;
+          final occupiedRooms = List<String>.from(occupantData['rooms'] as List? ?? const []);
+          final targetRooms = List<String>.from(data['rooms'] as List? ?? const []);
+          final targetNames = targetRooms.map(_normalizeRoomName).toSet();
+          final conflict = occupiedRooms.where((room) =>
+              targetNames.contains(_normalizeRoomName(room))).toList();
+          if (conflict.isNotEmpty) {
+            throw StateError('Previous guest checkout not recorded for ${conflict.join(', ')}.');
+          }
+        }
+      }
       final field = checkIn ? 'actualCheckIn' : 'actualCheckOut';
       final actorField = checkIn ? 'checkInMarkedBy' : 'checkOutMarkedBy';
       final oldValue = data[field] as Timestamp?;
