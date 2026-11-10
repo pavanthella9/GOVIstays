@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/booking.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'user_service.dart';
 
 class RoomAvailabilitySegment {
   final DateTime start;
@@ -149,6 +151,58 @@ class BookingService {
     }
   }
 
+
+  /// Records an arrival/departure or an admin-only timestamp correction.
+  /// The transaction prevents duplicate actions and preserves booking fields.
+  static Future<void> recordGuestEvent({
+    required String bookingId,
+    required bool checkIn,
+    DateTime? correctedTime,
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || UserService.currentUser?.active != true) {
+      throw StateError('An active user must be signed in.');
+    }
+    if (correctedTime != null && !UserService.isAdmin) {
+      throw StateError('Only admin can correct actual timestamps.');
+    }
+    final ref = _collection.doc(bookingId);
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      if (!snapshot.exists) throw StateError('Booking not found.');
+      final data = snapshot.data()!;
+      final field = checkIn ? 'actualCheckIn' : 'actualCheckOut';
+      final actorField = checkIn ? 'checkInMarkedBy' : 'checkOutMarkedBy';
+      final oldValue = data[field] as Timestamp?;
+      if (correctedTime == null && oldValue != null) {
+        throw StateError('This action was already recorded.');
+      }
+      if (correctedTime != null && oldValue == null) {
+        throw StateError('Record the event before correcting it.');
+      }
+      final newTime = correctedTime ?? DateTime.now();
+      final arrival = checkIn ? newTime : (data['actualCheckIn'] as Timestamp?)?.toDate();
+      final departure = checkIn ? (data['actualCheckOut'] as Timestamp?)?.toDate() : newTime;
+      if (!checkIn && arrival == null) throw StateError('Check in the guest first.');
+      if (arrival != null && departure != null && departure.isBefore(arrival)) {
+        throw StateError('Check-out cannot precede check-in.');
+      }
+      final auditRef = ref.collection('guestEventAudit').doc();
+      transaction.update(ref, {
+        field: correctedTime == null ? FieldValue.serverTimestamp() : Timestamp.fromDate(newTime),
+        actorField: uid,
+      });
+      transaction.set(auditRef, {
+        'event': checkIn ? 'checkIn' : 'checkOut',
+        'action': correctedTime == null ? 'mark' : 'correct',
+        'actorUid': uid,
+        'oldTime': oldValue,
+        'newTime': correctedTime == null ? FieldValue.serverTimestamp() : Timestamp.fromDate(newTime),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
   static Future<bool> deleteBooking(Booking booking) async {
     try {
       await _collection.doc(booking.bookingId).delete();
@@ -182,6 +236,7 @@ class BookingService {
       batch.set(
         _collection.doc(newBooking.bookingId),
         newBooking.toFirestore(),
+        SetOptions(merge: true),
       );
       await batch.commit();
       return true;
