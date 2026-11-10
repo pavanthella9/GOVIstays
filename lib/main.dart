@@ -39,15 +39,13 @@ Future<void> main() async {
     FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: false);
   }
 
-  if (!emulatorMode) {
-  FirebaseMessaging.onBackgroundMessage(
-    firebaseMessagingBackgroundHandler,
-  );
-
-  await NotificationService.initialize(
-    rootScaffoldMessengerKey,
-  );
-
+  // Push topic subscriptions are supported by our Android app, not this
+  // browser preview. Web initialization must not block runApp().
+  if (!emulatorMode && !kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(
+      firebaseMessagingBackgroundHandler,
+    );
+    await NotificationService.initialize(rootScaffoldMessengerKey);
   }
 
   runApp(GOVIStaysApp(emulatorMode: emulatorMode));
