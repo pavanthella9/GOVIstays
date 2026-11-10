@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function profileExists() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    function currentProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function activeUser() {
+      return profileExists() && currentProfile().active == true;
+    }
+    function admin() { return activeUser() && currentProfile().role == 'admin'; }
+    function staff() { return activeUser() && currentProfile().role == 'staff'; }
+
+    function staffMarksArrival() {
+      return !('actualCheckIn' in resource.data) &&
+        !('actualCheckOut' in resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['actualCheckIn', 'checkInMarkedBy']) &&
+        request.resource.data.actualCheckIn == request.time &&
+        request.resource.data.checkInMarkedBy == request.auth.uid;
+    }
+    function staffMarksDeparture() {
+      return ('actualCheckIn' in resource.data) &&
+        !('actualCheckOut' in resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['actualCheckOut', 'checkOutMarkedBy']) &&
+        request.resource.data.actualCheckOut == request.time &&
+        request.resource.data.actualCheckOut >= resource.data.actualCheckIn &&
+        request.resource.data.checkOutMarkedBy == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || admin());
+      allow list: if admin();
+      allow create: if admin() || (
+        signedIn() &&
+        request.auth.uid == uid &&
+        request.auth.token.email == 'hillsidehomestay1@gmail.com' &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.role == 'admin' &&
+        request.resource.data.active == true
+      );
+      allow update: if admin();
+      allow delete: if false;
+    }
+    match /bookings/{bookingId} {
+      allow read: if activeUser();
+      allow create: if admin() || (
+        staff() &&
+        request.resource.data.totalAmount == 0 &&
+        request.resource.data.advanceAmount == 0 &&
+        request.resource.data.balanceAmount == 0
+      );
+      allow update: if admin() || (staff() &&
+        (staffMarksArrival() || staffMarksDeparture()));
+      allow delete: if admin();
+
+      match /guestEventAudit/{eventId} {
+        allow read: if activeUser();
+        allow create: if (admin() || staff()) &&
+          request.resource.data.keys().hasOnly([
+            'event', 'action', 'actorUid', 'oldTime', 'newTime', 'createdAt'
+          ]) &&
+          request.resource.data.actorUid == request.auth.uid &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.event in ['checkIn', 'checkOut'] &&
+          request.resource.data.action in ['mark', 'correct'] &&
+          (admin() || (
+            request.resource.data.action == 'mark' &&
+            request.resource.data.oldTime == null &&
+            request.resource.data.newTime == request.time
+          ));
+        allow update, delete: if false;
+      }
+    }
+    match /customers/{customerId} {
+      allow read, create, update, delete: if admin();
+    }
+    match /expenses/{expenseId} {
+      allow read, create, update, delete: if admin();
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
