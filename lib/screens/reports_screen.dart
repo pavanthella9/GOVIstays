@@ -82,6 +82,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
               const SizedBox(height: 12),
               Card(
                 child: ListTile(
+                  leading: const Icon(Icons.schedule),
+                  title: const Text('Occupied / Available Room Hours'),
+                  subtitle: Text('${summary.occupiedRoomHours.toStringAsFixed(1)} / ${summary.availableRoomHours.toStringAsFixed(1)} hours'),
+                ),
+              ),
+              Card(
+                child: ListTile(
                   leading: const Icon(Icons.star),
                   title: const Text('Most Booked Room'),
                   subtitle: Text(summary.mostBookedRoom),
@@ -90,7 +97,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               const Padding(
                 padding: EdgeInsets.only(top: 12),
                 child: Text(
-                  'Values are calculated from bookings whose check-in date falls within the selected period.',
+                  'Booking totals and room nights use scheduled check-in dates. Occupancy uses booked room-hours overlapping the selected period, including partial-day stays.',
                   textAlign: TextAlign.center,
                 ),
               ),
