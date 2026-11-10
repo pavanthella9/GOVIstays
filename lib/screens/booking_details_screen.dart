@@ -59,11 +59,19 @@ class BookingDetailsScreen extends StatelessWidget {
           _row('Actual check-in', current.actualCheckIn == null ? 'Not recorded' : _formatDateTime(current.actualCheckIn!)),
           _row('Actual check-out', current.actualCheckOut == null ? 'Not recorded' : _formatDateTime(current.actualCheckOut!)),
           if (current.actualCheckIn == null &&
+              current.actualCheckOut == null &&
               !DateTime.now().isBefore(current.checkIn) &&
               DateTime.now().isBefore(current.checkOut))
             FilledButton.icon(onPressed: () => _record(context, true), icon: const Icon(Icons.login), label: const Text('Mark Guest Check-in')),
+          if (current.actualCheckIn == null &&
+              current.actualCheckOut == null &&
+              DateTime.now().isBefore(current.checkIn) &&
+              DateTime.now().year == current.checkIn.year &&
+              DateTime.now().month == current.checkIn.month &&
+              DateTime.now().day == current.checkIn.day)
+            OutlinedButton.icon(onPressed: () => _record(context, true, early: true), icon: const Icon(Icons.schedule), label: const Text('Early Check-in')),
           if (current.actualCheckIn != null && current.actualCheckOut == null)
-            FilledButton.icon(onPressed: () => _record(context, false), icon: const Icon(Icons.logout), label: const Text('Mark Guest Check-out')),
+            FilledButton.icon(onPressed: () => _record(context, false), icon: const Icon(Icons.logout), label: Text(DateTime.now().isAfter(current.checkOut) ? 'Mark Overdue Check-out' : 'Mark Guest Check-out')),
           if (isAdmin && current.actualCheckIn != null)
             OutlinedButton(onPressed: () => _correct(context, true, current.actualCheckIn!), child: const Text('Correct Actual Check-in')),
           if (isAdmin && current.actualCheckOut != null)
@@ -281,10 +289,12 @@ class BookingDetailsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _record(BuildContext context, bool checkIn) async {
+  Future<void> _record(BuildContext context, bool checkIn, {bool early = false}) async {
     final confirmed = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
-      title: Text(checkIn ? 'Confirm guest arrival?' : 'Confirm guest departure?'),
-      content: const Text('The actual time will be recorded now. Scheduled room availability will not change.'),
+      title: Text(early ? 'Confirm early guest arrival?' : checkIn ? 'Confirm guest arrival?' : 'Confirm guest departure?'),
+      content: Text(early
+          ? 'Confirm the guest is physically present. Rooms: ${booking.rooms.join(', ')}. Scheduled arrival: ${_formatDateTime(booking.checkIn)}. The actual arrival time will be recorded now.'
+          : 'The actual time will be recorded now. Scheduled room availability will not change.'),
       actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
         FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Confirm'))],
     ));
