@@ -72,7 +72,14 @@ service cloud.firestore {
           (admin() || (
             request.resource.data.action == 'mark' &&
             request.resource.data.oldTime == null &&
-            request.resource.data.newTime == request.time
+            request.resource.data.newTime == request.time &&
+            existsAfter(/databases/$(database)/documents/bookings/$(bookingId)) &&
+            ((request.resource.data.event == 'checkIn' &&
+              getAfter(/databases/$(database)/documents/bookings/$(bookingId)).data.actualCheckIn == request.time &&
+              getAfter(/databases/$(database)/documents/bookings/$(bookingId)).data.checkInMarkedBy == request.auth.uid) ||
+             (request.resource.data.event == 'checkOut' &&
+              getAfter(/databases/$(database)/documents/bookings/$(bookingId)).data.actualCheckOut == request.time &&
+              getAfter(/databases/$(database)/documents/bookings/$(bookingId)).data.checkOutMarkedBy == request.auth.uid))
           ));
         allow update, delete: if false;
       }
