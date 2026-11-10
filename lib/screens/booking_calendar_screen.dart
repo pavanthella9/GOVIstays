@@ -61,6 +61,57 @@ class _BookingCalendarScreenState
   List<Booking> _eventsForDay(DateTime day) =>
       BookingService.getBookingsForDate(day);
 
+  // Green: no room booked; orange: some booked time; red: all rooms
+  // booked for the entire day. Uses scheduled times, not actual movements.
+  Color _availabilityColor(DateTime day) {
+    var anyBooked = false;
+    var allRoomsBookedAllDay = true;
+    for (final room in BookingService.allRooms) {
+      final segments = BookingService.getRoomAvailabilityForDate(room, day);
+      if (segments.any((segment) => segment.isBooked)) {
+        anyBooked = true;
+      }
+      if (segments.any((segment) => !segment.isBooked)) {
+        allRoomsBookedAllDay = false;
+      }
+    }
+    if (!anyBooked) return Colors.green;
+    return allRoomsBookedAllDay ? Colors.red : Colors.orange;
+  }
+
+  Widget _calendarDay(DateTime day, {bool selected = false, bool today = false}) {
+    final color = _availabilityColor(day);
+    return Center(
+      child: Container(
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: selected ? 1 : 0.20),
+          shape: BoxShape.circle,
+          border: today ? Border.all(color: Colors.blue, width: 2) : null,
+        ),
+        child: Text(
+          '${day.day}',
+          style: TextStyle(
+            color: selected ? Colors.white : color,
+            fontWeight: selected || today ? FontWeight.bold : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _legendItem(Color color, String label) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 12, height: 12,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 5),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,8 +152,15 @@ class _BookingCalendarScreenState
                       _focusedDay = focusedDay;
                     },
                     calendarStyle: const CalendarStyle(
-                      markersMaxCount: 3,
+                      markersMaxCount: 0,
                       outsideDaysVisible: false,
+                    ),
+                    calendarBuilders: CalendarBuilders<Booking>(
+                      defaultBuilder: (context, day, focusedDay) => _calendarDay(day),
+                      todayBuilder: (context, day, focusedDay) =>
+                          _calendarDay(day, today: true),
+                      selectedBuilder: (context, day, focusedDay) =>
+                          _calendarDay(day, selected: true, today: isSameDay(day, DateTime.now())),
                     ),
                     headerStyle: const HeaderStyle(
                       formatButtonVisible: false,
@@ -110,6 +168,17 @@ class _BookingCalendarScreenState
                     ),
                   ),
                 ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 6,
+                children: [
+                  _legendItem(Colors.green, 'All available'),
+                  _legendItem(Colors.orange, 'Partially booked'),
+                  _legendItem(Colors.red, 'Fully booked all day'),
+                ],
               ),
               const SizedBox(height: 12),
               Text(
