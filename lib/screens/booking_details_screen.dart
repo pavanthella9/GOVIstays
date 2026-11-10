@@ -58,7 +58,9 @@ class BookingDetailsScreen extends StatelessWidget {
           const Text('Actual Guest Movements', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
           _row('Actual check-in', current.actualCheckIn == null ? 'Not recorded' : _formatDateTime(current.actualCheckIn!)),
           _row('Actual check-out', current.actualCheckOut == null ? 'Not recorded' : _formatDateTime(current.actualCheckOut!)),
-          if (current.actualCheckIn == null)
+          if (current.actualCheckIn == null &&
+              !DateTime.now().isBefore(current.checkIn) &&
+              DateTime.now().isBefore(current.checkOut))
             FilledButton.icon(onPressed: () => _record(context, true), icon: const Icon(Icons.login), label: const Text('Mark Guest Check-in')),
           if (current.actualCheckIn != null && current.actualCheckOut == null)
             FilledButton.icon(onPressed: () => _record(context, false), icon: const Icon(Icons.logout), label: const Text('Mark Guest Check-out')),
