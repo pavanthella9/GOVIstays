@@ -135,7 +135,7 @@ class BookingDetailsScreen extends StatelessWidget {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Guest has checked out',
+                            'Scheduled stay completed',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
