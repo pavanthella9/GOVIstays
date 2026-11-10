@@ -15,6 +15,10 @@ class Booking {
   final double advanceAmount;
   final double balanceAmount;
   final String notes;
+  final DateTime? actualCheckIn;
+  final DateTime? actualCheckOut;
+  final String? checkInMarkedBy;
+  final String? checkOutMarkedBy;
 
   Booking({
     required this.bookingId,
@@ -30,6 +34,10 @@ class Booking {
     required this.advanceAmount,
     required this.balanceAmount,
     required this.notes,
+    this.actualCheckIn,
+    this.actualCheckOut,
+    this.checkInMarkedBy,
+    this.checkOutMarkedBy,
   });
 
   Map<String, dynamic> toFirestore() {
@@ -47,6 +55,10 @@ class Booking {
       'advanceAmount': advanceAmount,
       'balanceAmount': balanceAmount,
       'notes': notes,
+      if (actualCheckIn != null) 'actualCheckIn': Timestamp.fromDate(actualCheckIn!),
+      if (actualCheckOut != null) 'actualCheckOut': Timestamp.fromDate(actualCheckOut!),
+      if (checkInMarkedBy != null) 'checkInMarkedBy': checkInMarkedBy,
+      if (checkOutMarkedBy != null) 'checkOutMarkedBy': checkOutMarkedBy,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -66,6 +78,10 @@ class Booking {
       'advanceAmount': advanceAmount,
       'balanceAmount': balanceAmount,
       'notes': notes,
+      if (actualCheckIn != null) 'actualCheckIn': actualCheckIn!.toIso8601String(),
+      if (actualCheckOut != null) 'actualCheckOut': actualCheckOut!.toIso8601String(),
+      if (checkInMarkedBy != null) 'checkInMarkedBy': checkInMarkedBy,
+      if (checkOutMarkedBy != null) 'checkOutMarkedBy': checkOutMarkedBy,
     };
   }
 
@@ -111,6 +127,10 @@ class Booking {
       advanceAmount: (data['advanceAmount'] as num?)?.toDouble() ?? 0,
       balanceAmount: (data['balanceAmount'] as num?)?.toDouble() ?? 0,
       notes: (data['notes'] as String?) ?? '',
+      actualCheckIn: data['actualCheckIn'] == null ? null : readDate(data['actualCheckIn'], 'actualCheckIn'),
+      actualCheckOut: data['actualCheckOut'] == null ? null : readDate(data['actualCheckOut'], 'actualCheckOut'),
+      checkInMarkedBy: data['checkInMarkedBy'] as String?,
+      checkOutMarkedBy: data['checkOutMarkedBy'] as String?,
     );
   }
 }
