@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import 'user_service.dart';
 
@@ -38,8 +39,14 @@ class AuthService {
       await _auth.signOut();
       throw AuthException(error.message);
     } on FirebaseAuthException catch (error) {
-      throw AuthException(_messageForCode(error.code));
-    } catch (_) {
+      if (kDebugMode) {
+        debugPrint('GOVISTAYS_AUTH_DIAGNOSTIC code=${error.code} message=${error.message}');
+      }
+      throw AuthException(kDebugMode
+          ? 'Login error (${error.code}): ${error.message ?? 'Unknown Firebase error'}'
+          : _messageForCode(error.code));
+    } catch (error) {
+      if (kDebugMode) debugPrint('GOVISTAYS_AUTH_DIAGNOSTIC unexpected=$error');
       throw const AuthException(
         'Unable to sign in. Check your internet connection and try again.',
       );
