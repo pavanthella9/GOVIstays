@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/expense.dart';
 import '../services/expense_service.dart';
+import '../services/booking_service.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
@@ -54,7 +55,20 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           final expenses = snapshot.data!;
           final total = expenses.fold<double>(0, (sum, item) => sum + item.amount);
 
-          return ListView(
+          return ValueListenableBuilder<int>(
+            valueListenable: BookingService.changeNotifier,
+            builder: (context, _, __) {
+              final monthStart = DateTime(_selectedMonth.year, _selectedMonth.month);
+              final nextMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+              final monthlyBookings = BookingService.bookings.where((booking) =>
+                  !booking.checkIn.isBefore(monthStart) && booking.checkIn.isBefore(nextMonth));
+              final bookingValue = monthlyBookings.fold<double>(0, (sum, b) => sum + b.totalAmount);
+              final collected = monthlyBookings.fold<double>(0, (sum, b) => sum + b.advanceAmount);
+              final pending = monthlyBookings.fold<double>(0, (sum, b) => sum + b.balanceAmount);
+              final estimatedProfit = bookingValue - total;
+              final collectedLessExpenses = collected - total;
+
+              return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
               Card(
@@ -89,6 +103,31 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       Text(
                         '₹${total.toStringAsFixed(0)}',
                         style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Monthly Profit & Loss', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      _financialLine('Booking value', bookingValue),
+                      _financialLine('Recorded collections', collected),
+                      _financialLine('Outstanding balance', pending),
+                      _financialLine('Recorded expenses', total),
+                      const Divider(),
+                      _financialLine('Estimated profit / loss', estimatedProfit, emphasize: true),
+                      _financialLine('Collections minus expenses', collectedLessExpenses, emphasize: true),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Bookings are grouped by scheduled check-in month. Collections reflect current amounts recorded against those bookings, not the dates payments were received. Estimated profit excludes unrecorded costs and taxes.',
+                        style: TextStyle(fontSize: 12),
                       ),
                     ],
                   ),
@@ -143,8 +182,24 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   ),
                 ),
             ],
+              );
+            },
           );
         },
+      ),
+    );
+  }
+
+  Widget _financialLine(String label, double amount, {bool emphasize = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: TextStyle(fontWeight: emphasize ? FontWeight.bold : FontWeight.normal))),
+          Text('₹${amount.toStringAsFixed(0)}',
+              style: TextStyle(fontWeight: emphasize ? FontWeight.bold : FontWeight.w500,
+                  color: amount < 0 ? Colors.red : null)),
+        ],
       ),
     );
   }
