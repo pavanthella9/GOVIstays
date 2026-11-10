@@ -34,7 +34,11 @@ class BookingDetailsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Booking Details')),
-      body: ListView(
+      body: ValueListenableBuilder<int>(
+        valueListenable: BookingService.changeNotifier,
+        builder: (context, _, __) {
+          final current = BookingService.bookings.where((b) => b.bookingId == booking.bookingId).firstOrNull ?? booking;
+          return ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
@@ -50,6 +54,19 @@ class BookingDetailsScreen extends StatelessWidget {
           _row('Rooms', booking.rooms.join(', ')),
           _row('Check-in', _formatDateTime(booking.checkIn)),
           _row('Check-out', _formatDateTime(booking.checkOut)),
+          const Divider(height: 28),
+          const Text('Actual Guest Movements', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+          _row('Actual check-in', current.actualCheckIn == null ? 'Not recorded' : _formatDateTime(current.actualCheckIn!)),
+          _row('Actual check-out', current.actualCheckOut == null ? 'Not recorded' : _formatDateTime(current.actualCheckOut!)),
+          if (current.actualCheckIn == null)
+            FilledButton.icon(onPressed: () => _record(context, true), icon: const Icon(Icons.login), label: const Text('Mark Guest Check-in')),
+          if (current.actualCheckIn != null && current.actualCheckOut == null)
+            FilledButton.icon(onPressed: () => _record(context, false), icon: const Icon(Icons.logout), label: const Text('Mark Guest Check-out')),
+          if (isAdmin && current.actualCheckIn != null)
+            OutlinedButton(onPressed: () => _correct(context, true, current.actualCheckIn!), child: const Text('Correct Actual Check-in')),
+          if (isAdmin && current.actualCheckOut != null)
+            OutlinedButton(onPressed: () => _correct(context, false, current.actualCheckOut!), child: const Text('Correct Actual Check-out')),
+          const Divider(height: 12),
           if (isAdmin) ...[
             const Divider(height: 28),
             _row('Total', '₹${_money(booking.totalAmount)}'),
@@ -256,8 +273,40 @@ class BookingDetailsScreen extends StatelessWidget {
             ),
           ],
         ],
+      );
+        },
       ),
     );
+  }
+
+  Future<void> _record(BuildContext context, bool checkIn) async {
+    final confirmed = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      title: Text(checkIn ? 'Confirm guest arrival?' : 'Confirm guest departure?'),
+      content: const Text('The actual time will be recorded now. Scheduled room availability will not change.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Confirm'))],
+    ));
+    if (confirmed != true) return;
+    try {
+      await BookingService.recordGuestEvent(bookingId: booking.bookingId, checkIn: checkIn);
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guest movement recorded.')));
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unable to record: $e')));
+    }
+  }
+
+  Future<void> _correct(BuildContext context, bool checkIn, DateTime existing) async {
+    final day = await showDatePicker(context: context, initialDate: existing, firstDate: DateTime(2020), lastDate: DateTime(2100));
+    if (day == null || !context.mounted) return;
+    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(existing));
+    if (time == null || !context.mounted) return;
+    final corrected = DateTime(day.year, day.month, day.day, time.hour, time.minute);
+    try {
+      await BookingService.recordGuestEvent(bookingId: booking.bookingId, checkIn: checkIn, correctedTime: corrected);
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Actual timestamp corrected.')));
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unable to correct: $e')));
+    }
   }
 
   Widget _row(String label, String value) {
