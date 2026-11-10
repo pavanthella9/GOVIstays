@@ -11,6 +11,8 @@ class ReportSummary {
   final double advanceCollected;
   final double pendingBalance;
   final double occupancyPercentage;
+  final double occupiedRoomHours;
+  final double availableRoomHours;
   final String mostBookedRoom;
 
   const ReportSummary({
@@ -23,6 +25,8 @@ class ReportSummary {
     required this.advanceCollected,
     required this.pendingBalance,
     required this.occupancyPercentage,
+    required this.occupiedRoomHours,
+    required this.availableRoomHours,
     required this.mostBookedRoom,
   });
 }
@@ -62,11 +66,22 @@ class ReportService {
       }
     }
 
-    final days = rangeEnd.difference(rangeStart).inDays + 1;
-    final possibleRoomNights = BookingService.totalRoomsCount * days;
-    final occupancy = possibleRoomNights == 0
+    // Occupancy is measured in room-hours, not rounded room-nights.
+    // Clip each stay to the selected inclusive calendar-day range so a
+    // booking spanning two months contributes only its hours in each month.
+    final exclusiveEnd = DateTime(end.year, end.month, end.day + 1);
+    final availableRoomHours =
+        exclusiveEnd.difference(rangeStart).inMinutes / 60.0 * BookingService.totalRoomsCount;
+    var occupiedRoomHours = 0.0;
+    for (final booking in BookingService.bookings) {
+      final overlapStart = booking.checkIn.isAfter(rangeStart) ? booking.checkIn : rangeStart;
+      final overlapEnd = booking.checkOut.isBefore(exclusiveEnd) ? booking.checkOut : exclusiveEnd;
+      if (!overlapEnd.isAfter(overlapStart)) continue;
+      occupiedRoomHours += overlapEnd.difference(overlapStart).inMinutes / 60.0 * booking.rooms.length;
+    }
+    final occupancy = availableRoomHours == 0
         ? 0.0
-        : (roomNights / possibleRoomNights * 100).clamp(0.0, 100.0);
+        : (occupiedRoomHours / availableRoomHours * 100).clamp(0.0, 100.0).toDouble();
 
     var mostBookedRoom = 'No bookings';
     var highestCount = 0;
@@ -87,6 +102,8 @@ class ReportService {
       advanceCollected: advanceCollected,
       pendingBalance: pendingBalance,
       occupancyPercentage: occupancy,
+      occupiedRoomHours: occupiedRoomHours,
+      availableRoomHours: availableRoomHours,
       mostBookedRoom: mostBookedRoom,
     );
   }
